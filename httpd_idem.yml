@@ -1,0 +1,48 @@
+- hosts: Httpd
+  vars: 
+          - package_name: httpd
+  vars_prompt:
+          - name: dvd_dir
+            private: no
+            prompt: "Enter DVD Mount Point"
+            
+  tasks:  
+          - file:
+                  state: directory
+                  path: "{{ dvd_dir }}"
+                 
+          - mount:
+                  src: "/dev/cdrom"
+                  path: "{{ dvd_dir }}"
+                  state: mounted
+                  fstype: "iso9660"
+
+          - yum_repository:
+                  baseurl: "{{ dvd_dir }}/AppStream"
+                  name: "mydvd1"
+                  description: "my dvd1 for package"
+                  gpgcheck: no
+
+          - yum_repository:
+                  baseurl: "{{ dvd_dir }}/BaseOS"
+                  name: "mydvd2"
+                  description: "my dvd2 for package"
+                  gpgcheck: no
+
+          - package:
+                  name: "{{ package_name }}"
+                  state: present
+
+          - copy: 
+                  dest: "/var/www/html/index.html"
+                  content: "Task 11.3 For Httpd Idempotence"
+            notify: "Restart httpd Service"
+
+          - firewalld:
+                   port: "80/tcp"
+                   state: enabled
+                   permanent: yes
+                   immediate: yes
+  handlers:
+          - name: "Restart httpd Service"
+            command: "/usr/sbin/httpd"        
